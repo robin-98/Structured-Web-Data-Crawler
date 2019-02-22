@@ -1,5 +1,5 @@
 import os
-
+import json
 
 # Each website is a separate project (folder)
 def create_project_dir(directory):
@@ -49,3 +49,15 @@ def set_to_file(links, file_name):
     with open(file_name,"w") as f:
         for l in sorted(links):
             f.write(l+"\n")
+
+# test read configurations from json file
+
+
+def read_configure_file(cfg_file):
+    if not os.path.isfile(cfg_file):
+        print('can not access file', cfg_file);
+        sys.exit(1);
+
+    with open(cfg_file, encoding='utf-8') as f:
+        cfg = json.load(f);
+        return cfg;

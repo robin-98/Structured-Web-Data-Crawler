@@ -3,48 +3,68 @@ from queue import Queue
 from spider import Spider
 from domain import *
 from general import *
+import sys
 
-PROJECT_NAME = 'viper-seo'
-HOMEPAGE = 'http://viper-seo.com/'
-DOMAIN_NAME = get_domain_name(HOMEPAGE)
-QUEUE_FILE = PROJECT_NAME + '/queue.txt'
-CRAWLED_FILE = PROJECT_NAME + '/crawled.txt'
-NUMBER_OF_THREADS = 8
-queue = Queue()
-Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME)
+# read the onfigure file
+if (len(sys.argv) == 1):
+  print ('Please input the config file name/path');
+  sys.exit(1);
 
+cfg_file = sys.argv[1];
+cfg = read_configure_file(cfg_file);
 
-# Create worker threads (will die when main exits)
-def create_workers():
+if "multi-thread-python-spider" not in cfg:
+    print('multi-thread python spider is not configured');
+    sys.exit(1);
+
+cfg = cfg["multi-thread-python-spider"];
+# end of read configure file
+
+# Read projects
+if "target_sites" not in cfg:
+    print('can not find target sites in the configure');
+    sys.exit(1);
+
+data_dir = cfg["data_dir"];
+for site in cfg["target_sites"]:
+  PROJECT_NAME = data_dir + '/' + site['project_name'] +'/' + site['version'];
+  HOMEPAGE = site['base_url'];
+  DOMAIN_NAME = get_domain_name(HOMEPAGE);
+  QUEUE_FILE = PROJECT_NAME + '/queue.txt'
+  CRAWLED_FILE = PROJECT_NAME + '/crawled.txt'
+  NUMBER_OF_THREADS = site['threads'];
+  queue = Queue()
+  Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME)
+
+  # Create worker threads (will die when main exits)
+  def create_workers():
     for _ in range(NUMBER_OF_THREADS):
-        t = threading.Thread(target=work)
-        t.daemon = True
-        t.start()
+      t = threading.Thread(target=work)
+      t.daemon = True
+      t.start()
 
-
-# Do the next job in the queue
-def work():
+  # Do the next job in the queue
+  def work():
     while True:
-        url = queue.get()
-        Spider.crawl_page(threading.current_thread().name, url)
-        queue.task_done()
+      url = queue.get()
+      Spider.crawl_page(threading.current_thread().name, url)
+      queue.task_done()
 
-
-# Each queued link is a new job
-def create_jobs():
+  # Each queued link is a new job
+  def create_jobs():
     for link in file_to_set(QUEUE_FILE):
-        queue.put(link)
+      queue.put(link)
     queue.join()
     crawl()
 
-
-# Check if there are items in the queue, if so crawl them
-def crawl():
+  # Check if there are items in the queue, if so crawl them
+  def crawl():
     queued_links = file_to_set(QUEUE_FILE)
     if len(queued_links) > 0:
-        print(str(len(queued_links)) + ' links in the queue')
-        create_jobs()
+      print(str(len(queued_links)) + ' links in the queue')
+      create_jobs()
+
+  create_workers()
+  crawl()  
 
 
-create_workers()
-crawl()
