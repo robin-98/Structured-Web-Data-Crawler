@@ -1,4 +1,5 @@
 from urllib.request import urlopen
+# from page_parser import PageParser
 from link_finder import LinkFinder
 from domain import *
 from general import *
@@ -51,12 +52,12 @@ class Spider:
             if 'text/html' in response.getheader('Content-Type'):
                 html_bytes = response.read()
                 html_string = html_bytes.decode("utf-8")
-            finder = LinkFinder(Spider.base_url, page_url)
-            finder.feed(html_string)
+            parser = LinkFinder(Spider.base_url, page_url)
+            parser.feed(html_string)
         except Exception as e:
             print(str(e))
             return set()
-        return finder.page_links()
+        return parser.page_links()
 
     # Saves queue data to project files
     @staticmethod
