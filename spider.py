@@ -1,6 +1,6 @@
 from urllib.request import urlopen
-# from page_parser import PageParser
-from link_finder import LinkFinder
+from page_parser import PageParser
+# from link_finder import LinkFinder
 from domain import *
 from general import *
 
@@ -52,7 +52,8 @@ class Spider:
             if 'text/html' in response.getheader('Content-Type'):
                 html_bytes = response.read()
                 html_string = html_bytes.decode("utf-8")
-            parser = LinkFinder(Spider.base_url, page_url)
+            # parser = LinkFinder(Spider.base_url, page_url)
+            parser = PageParser(Spider.base_url, page_url)
             parser.feed(html_string)
         except Exception as e:
             print(str(e))
