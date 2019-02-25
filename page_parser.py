@@ -1,46 +1,39 @@
 from html.parser import HTMLParser
 from urllib import parse
-
-class HtmlTag:
-
-    def __init__(self, tagStr, attrs):
-        self.tag = tagStr;
-        self.attrs = attrs;
-
-        # array of contents contain tags and paragraphs of text
-        self.contents = []; 
-
-    def addSubTag(self, tagInst):
-        self.contents.append(tagInst);
-
-
-    def addText(self, text):
-        self.contents.append(text);
-
-
-    def text(self):
-        content = '';
-        for c in self.contents:
-            if isinstance(c, HtmlTag):
-                content += c.text();
-            elif isinstance(c, str):
-                content += c;
-
-        return content;
-
-
+from html_tag import HtmlTag
+from target_extractor import Target
+# Link structure is yet NOT supportable
 # class Link:
-
+#     '''Link instance inside a webpage,
+#        to record its parent links and link texts
+#     '''
 #     def __init__(self, url, text):
 #         self.url = url;
-#         self.text = text;
+#         self.texts = set();
+#         if not text is None:
+#             self.texts[text] = True;
 
+#         self.parent_links = {};
 
+#     def addParentLink(self, url, text):
+#         if not url in self.parent_links:
+#             p = Link(url, text);
+#             self.parent_links[url] = p;
+#         else:
+#             p = self.parent_links[url];
+#             if not text in p.texts:
+#                 p.texts.add(text);
+
+#     def link_texts(self):
+#         return list(self.texts);
 
 
 class PageParser(HTMLParser):
-
-    def __init__(self, base_url, page_url):
+    '''Inherit from HtmlParser
+        maintaining an inner stack instance to track
+        the document structure and the tag container path
+    '''
+    def __init__(self, base_url, page_url, target_definition = None):
         super().__init__();
         self.base_url = base_url;
         self.page_url = page_url;
@@ -48,7 +41,28 @@ class PageParser(HTMLParser):
         self.tag_stack = [];
         self.__components = [];
         self.__links = set();
-    
+        self.targets = [];
+        if not target_definition is None:
+            for target_def in target_definition:
+                self.targets.append(Target(target_def));
+
+
+    def current_selector(self, return_text=False):
+        if len(self.tag_stack) == 0:
+            return '';
+
+        selector = [];
+        for t in self.tag_stack:
+            if t.is_using_id():
+                selector = [t.selector()];
+            else:
+                selector.append(t.selector());
+
+        if return_text:
+            return ' > '.join(selector);
+        else:
+            return selector;
+
 
     # When we call HTMLParser feed() this function is called when it encounters an opening tag <a>
     def handle_starttag(self, tag, attrs):
@@ -83,6 +97,15 @@ class PageParser(HTMLParser):
 
         if len(self.tag_stack) == 0:
             self.__components.append(t);
+
+        current_selector = self.current_selector();
+        for t in self.targets:
+            comp = t.search_component_by_selector(current_selector);
+            if not comp is None:
+                print('*'*30);
+                print('* ', current_selector(return_text = True));
+                print('*'*30);
+
 
     
     def handle_data(self, data):

@@ -1,6 +1,6 @@
 from urllib.request import urlopen
 from page_parser import PageParser
-# from link_finder import LinkFinder
+from target_extractor import Target
 from domain import *
 from general import *
 
@@ -15,12 +15,13 @@ class Spider:
     queue = set()
     crawled = set()
 
-    def __init__(self, project_name, base_url, domain_name):
+    def __init__(self, project_name, base_url, domain_name, target_definition = None):
         Spider.project_name = project_name
         Spider.base_url = base_url
         Spider.domain_name = domain_name
         Spider.queue_file = Spider.project_name + '/queue.txt'
         Spider.crawled_file = Spider.project_name + '/crawled.txt'
+        Spider.target_definition = target_definition;
         self.boot()
         self.crawl_page('First spider', Spider.base_url)
 
@@ -52,8 +53,7 @@ class Spider:
             if 'text/html' in response.getheader('Content-Type'):
                 html_bytes = response.read()
                 html_string = html_bytes.decode("utf-8")
-            # parser = LinkFinder(Spider.base_url, page_url)
-            parser = PageParser(Spider.base_url, page_url)
+            parser = PageParser(Spider.base_url, page_url, Spider.target_definition)
             parser.feed(html_string)
         except Exception as e:
             print(str(e))
