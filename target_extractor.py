@@ -38,8 +38,8 @@ class Target:
             for comp_def in target_def['components']:
                 self.add_component(comp_def);
 
-
-    def normalize_selector(self, selector):
+    @staticmethod
+    def normalize_selector(selector):
         s = re.sub(r':?.?nth-child\(\d+\)', '', selector);
         return s;
 
@@ -48,26 +48,27 @@ class Target:
     # but in the definition, we can only us 'dev.main-content'
     # because the class 'w.1240' is responsive design element and does not matter
     # in this situation, they are matched
-    def is_selector_match(self, sel_target, sel_inst):
+    @staticmethod
+    def is_selector_match(sel_inst, sel_target):
         if sel_inst[0] == '#':
             return sel_inst == sel_target;
         else:
-            target = self.normalize_selector(sel_target).split('.');
+            target = Target.normalize_selector(sel_target).split('.');
             inst = sel_inst.split('.');
-            if target[0] != inst[0] or len(inst) > len(target):
+            if target[0] != inst[0] or len(inst) < len(target):
                 return False;
             elif len(inst) == 0 and len(target) == 0:
                 return True;
             else:
-                for i in inst:
-                    if not i in target:
+                for t in target:
+                    if not t in inst:
                         return False;
                 return True;                
 
-
-    def selector_in_dict(self, selector_inst, comp_dict):
+    @staticmethod
+    def selector_in_dict(selector_inst, comp_dict):
         for key in comp_dict:
-            if self.is_selector_match(key, selector_inst):
+            if Target.is_selector_match(selector_inst, key):
                 return key;
         return None;
 
@@ -95,7 +96,7 @@ class Target:
 
         pointer = self.component_search_tree;
         for selector in selector_list:
-            key = self.selector_in_dict(selector, pointer['children']);
+            key = Target.selector_in_dict(selector, pointer['children']);
             if not key is None:
                 pointer = pointer['children'][key];
             else:

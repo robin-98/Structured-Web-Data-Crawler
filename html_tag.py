@@ -2,7 +2,9 @@ class HtmlTag:
     '''Html Tag instances to wrap sub tags and contents'''
     def __init__(self, tagStr, attrs):
         self.tag = tagStr;
-        self.attrs = attrs;
+        self.attrs = {};
+        for (attribute, value) in attrs:
+            self.attrs[attribute] = value;
 
         # array of contents contain tags and paragraphs of text
         self.contents = [];
@@ -35,10 +37,9 @@ class HtmlTag:
 
     # gennerate the jQuery style element selector for the tag instance
     def selector(self):
-        s = '' + self.tag;
-        if len(self.attrs) > 0:
-            if 'id' in self.attrs:
-                s = '#' + self.attrs['id'];
-            elif 'class' in self.attrs:
-                s += '.' + self.attrs['class'].replace(' ', '.');
-        return s;
+        result = self.tag;
+        if 'id' in self.attrs:
+            result = '#' + self.attrs['id'];
+        elif 'class' in self.attrs:
+            result += '.' + self.attrs['class'].replace(' ', '.');
+        return result;

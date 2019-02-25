@@ -58,7 +58,8 @@ class Spider:
         except Exception as e:
             print(str(e))
             return set()
-        return parser.page_links()
+        return set();
+        # return parser.page_links()
 
     # Saves queue data to project files
     @staticmethod

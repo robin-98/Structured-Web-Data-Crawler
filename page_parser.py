@@ -47,21 +47,28 @@ class PageParser(HTMLParser):
                 self.targets.append(Target(target_def));
 
 
-    def current_selector(self, return_text=False):
-        if len(self.tag_stack) == 0:
-            return '';
+    def current_selector(self, tags = None, return_text=False):
+        tag_stack = tags;
+        if tags is None:
+            tag_stack = self.tag_stack;
 
-        selector = [];
-        for t in self.tag_stack:
-            if t.is_using_id():
-                selector = [t.selector()];
-            else:
-                selector.append(t.selector());
+        selector_path = [];
+
+        if len(tag_stack) != 0:
+            for t in tag_stack:
+                if t.is_using_id():
+                    selector_path = [t.selector()];
+                else:
+                    selector_path.append(t.selector());
+
+            if len(selector_path) >= 1 \
+               and Target.is_selector_match(selector_path[0], 'html'):
+               selector_path = selector_path[1:];
 
         if return_text:
-            return ' > '.join(selector);
+            return ' > '.join(selector_path);
         else:
-            return selector;
+            return selector_path;
 
 
     # When we call HTMLParser feed() this function is called when it encounters an opening tag <a>
@@ -86,26 +93,36 @@ class PageParser(HTMLParser):
     def page_links(self):
         return self.__links;
 
+
+    def pop_tag_stack(self):
+        current_selector = self.current_selector(self.tag_stack);
+        print('current selector:', current_selector);
+        for target_inst in self.targets:
+            comp = target_inst.search_component_by_selector(current_selector);
+            if not comp is None:
+                ################################
+                ### Process the target component
+                print('*'*50);
+                print(self.tag_stack[-1].text());
+                print('*'*50);
+                ################################
+
+        return self.tag_stack.pop();
+
     
     def handle_endtag(self, tag):
         if len(self.tag_stack) == 0:
             return;
 
-        t = self.tag_stack.pop();
+        t = self.pop_tag_stack();
         while len(self.tag_stack) > 0 and t.tag != tag:
-            t = self.tag_stack.pop();
+            t = self.pop_tag_stack();
 
         if len(self.tag_stack) == 0:
             self.__components.append(t);
 
-        current_selector = self.current_selector();
-        for t in self.targets:
-            comp = t.search_component_by_selector(current_selector);
-            if not comp is None:
-                print('*'*30);
-                print('* ', current_selector(return_text = True));
-                print('*'*30);
 
+        
 
     
     def handle_data(self, data):
