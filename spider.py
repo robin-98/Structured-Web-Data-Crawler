@@ -15,12 +15,13 @@ class Spider:
     queue = set()
     crawled = set()
 
-    def __init__(self, project_name, base_url, domain_name, target_definition = None):
+    def __init__(self, project_name, base_url, domain_name, white_list = None, target_definition = None):
         Spider.project_name = project_name
         Spider.base_url = base_url
         Spider.domain_name = domain_name
         Spider.queue_file = Spider.project_name + '/queue.txt'
         Spider.crawled_file = Spider.project_name + '/crawled.txt'
+        Spider.white_list = white_list;
         Spider.target_definition = target_definition;
         self.boot()
         self.crawl_page('First spider', Spider.base_url)
@@ -53,13 +54,13 @@ class Spider:
             if 'text/html' in response.getheader('Content-Type'):
                 html_bytes = response.read()
                 html_string = html_bytes.decode("utf-8")
-            parser = PageParser(Spider.base_url, page_url, Spider.target_definition)
+            parser = PageParser(Spider.base_url, page_url, Spider.white_list, Spider.target_definition)
             parser.feed(html_string)
         except Exception as e:
             print(str(e))
             return set()
-        return set();
-        # return parser.page_links()
+        # return set();
+        return parser.page_links()
 
     # Saves queue data to project files
     @staticmethod

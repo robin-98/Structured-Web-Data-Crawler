@@ -33,9 +33,10 @@ for site in cfg["target_sites"]:
   QUEUE_FILE = PROJECT_NAME + '/queue.txt'
   CRAWLED_FILE = PROJECT_NAME + '/crawled.txt'
   NUMBER_OF_THREADS = site['threads'];
+  WHITE_LIST = site['white_list'];
   TARGET_DEFINITION = site['target_components'];
   queue = Queue()
-  Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME, TARGET_DEFINITION)
+  Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME, WHITE_LIST, TARGET_DEFINITION)
 
   # Create worker threads (will die when main exits)
   def create_workers():

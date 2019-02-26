@@ -1,4 +1,5 @@
 from html_tag import HtmlTag
+from urllib import parse
 import re
 
 class Component:
@@ -37,6 +38,22 @@ class Target:
         if 'components' in target_def:
             for comp_def in target_def['components']:
                 self.add_component(comp_def);
+
+    def is_page_a_target(self, page_url):
+        o = parse.urlparse(page_url);
+
+        if len(self.sub_domains) == 0 \
+        or o.netloc in self.sub_domains \
+        or o.scheme + '://' + o.netloc in self.sub_domains:
+            if len(self.sub_urls) == 0:
+                return True;
+            else:
+                for su in self.sub_urls:
+                    if su in o.path \
+                    and o.path.index(su) == 0:
+                        return True;
+        return False;
+
 
     @staticmethod
     def normalize_selector(selector):

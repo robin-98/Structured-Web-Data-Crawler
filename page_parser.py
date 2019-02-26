@@ -33,7 +33,7 @@ class PageParser(HTMLParser):
         maintaining an inner stack instance to track
         the document structure and the tag container path
     '''
-    def __init__(self, base_url, page_url, target_definition = None):
+    def __init__(self, base_url, page_url, white_list = None, target_definition = None):
         super().__init__();
         self.base_url = base_url;
         self.page_url = page_url;
@@ -41,10 +41,16 @@ class PageParser(HTMLParser):
         self.tag_stack = [];
         self.__components = [];
         self.__links = set();
+        self.white_list = [];
+        if not white_list is None:
+            self.white_list = white_list;
+
         self.targets = [];
         if not target_definition is None:
             for target_def in target_definition:
-                self.targets.append(Target(target_def));
+                t = Target(target_def);
+                if t.is_page_a_target(self.page_url):
+                    self.targets.append(t);
 
 
     def current_selector(self, tags = None, return_text=False):
@@ -71,11 +77,19 @@ class PageParser(HTMLParser):
             return selector_path;
 
 
+    def is_link_in_white_list(self, url):
+        if len(self.white_list) == 0:
+            return True;
+        else:
+            o = parse.urlparse(url);
+            if o.netloc in self.white_list \
+            or o.scheme + '://' + o.netloc in self.white_list:
+                return True;
+            else:
+                return False;
+
     # When we call HTMLParser feed() this function is called when it encounters an opening tag <a>
     def handle_starttag(self, tag, attrs):
-        # if tag in self.tag_handlers:
-        #     handler = self.tag_handlers[tag];
-        #     handler(tag, attrs);
         t = HtmlTag(tag, attrs);
         if len(self.tag_stack) > 0:
             self.tag_stack[-1].addSubTag(t);
@@ -86,8 +100,9 @@ class PageParser(HTMLParser):
         if tag == 'a':
             for (attribute, value) in attrs:
                 if attribute == 'href':
-                    url = parse.urljoin(self.base_url, value)
-                    self.__links.add(url);
+                    url = parse.urljoin(self.base_url, value);
+                    if self.is_link_in_white_list(url):
+                        self.__links.add(url);
 
 
     def page_links(self):
@@ -95,17 +110,22 @@ class PageParser(HTMLParser):
 
 
     def pop_tag_stack(self):
-        current_selector = self.current_selector(self.tag_stack);
-        print('current selector:', current_selector);
-        for target_inst in self.targets:
-            comp = target_inst.search_component_by_selector(current_selector);
-            if not comp is None:
-                ################################
-                ### Process the target component
-                print('*'*50);
-                print(self.tag_stack[-1].text());
-                print('*'*50);
-                ################################
+        if len(self.targets) > 0:
+            current_selector = self.current_selector(self.tag_stack);
+            for target_inst in self.targets:
+                comp = target_inst.search_component_by_selector(current_selector);
+                if not comp is None:
+                    # pass;
+                    ################################
+                    ### Process the target component
+                    print('');
+                    print('#'*50);
+                    print(self.page_url);
+                    print('*'*50);
+                    print(self.tag_stack[-1].text());
+                    print('#'*50);
+                    print('');
+                    ################################
 
         return self.tag_stack.pop();
 
