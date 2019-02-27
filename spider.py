@@ -56,11 +56,14 @@ class Spider:
                 html_bytes = response.read()
                 html_string = html_bytes.decode("utf-8")
             parser = PageParser(Spider.base_url, page_url, Spider.white_list, Spider.target_definition, Spider.project_name)
+            # print(html_string)
             parser.feed(html_string)
         except Exception as e:
             print(str(e))
-            return set()
+            raise e;
+            # return set()
         return parser.page_links()
+        # return set();
 
     # Saves queue data to project files
     @staticmethod

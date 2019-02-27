@@ -9,7 +9,7 @@ class HtmlTag:
         # array of contents contain tags and paragraphs of text
         self.contents = [];
 
-        self.path = [];
+        self.nth_child = 0;
 
     def addSubTag(self, tagInst):
         self.contents.append(tagInst);
@@ -37,9 +37,18 @@ class HtmlTag:
 
     # gennerate the jQuery style element selector for the tag instance
     def selector(self):
+        result = self.selector_without_nth_child();
+        if self.nth_child > 0:
+            result += ':nth-child(' + str(self.nth_child) + ')';
+        return result;
+
+    def selector_without_nth_child(self):
         result = self.tag;
         if 'id' in self.attrs:
             result = '#' + self.attrs['id'];
         elif 'class' in self.attrs:
             result += '.' + self.attrs['class'].replace(' ', '.');
+        if 'type' in self.attrs:
+            result += ':type=' + self.attrs['type'];
         return result;
+

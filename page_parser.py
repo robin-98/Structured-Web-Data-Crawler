@@ -52,8 +52,10 @@ class PageParser(HTMLParser):
                 if t.is_page_a_target(self.page_url):
                     self.targets.append(t);
 
+        self.selector_path_count = {};
 
-    def current_selector(self, tags = None, return_text=False):
+
+    def current_selector(self, tags = None, return_text=False, use_nth_child=False):
         tag_stack = tags;
         if tags is None:
             tag_stack = self.tag_stack;
@@ -62,10 +64,16 @@ class PageParser(HTMLParser):
 
         if len(tag_stack) != 0:
             for t in tag_stack:
-                if t.is_using_id():
-                    selector_path = [t.selector()];
+                ts = None;
+                if use_nth_child:
+                    ts = t.selector();
                 else:
-                    selector_path.append(t.selector());
+                    ts = t.selector_without_nth_child();
+
+                if t.is_using_id():
+                    selector_path = [ts];
+                else:
+                    selector_path.append(ts);
 
             if len(selector_path) >= 1 \
                and Target.is_selector_match(selector_path[0], 'html'):
@@ -96,6 +104,21 @@ class PageParser(HTMLParser):
 
         self.tag_stack.append(t);
 
+        # count the children index
+        current_selector_path = self.current_selector(return_text = True, use_nth_child = False);
+        if current_selector_path not in self.selector_path_count:
+            self.selector_path_count[current_selector_path] = t;
+        else:
+            previous_value = self.selector_path_count[current_selector_path];
+            nth_child = 1;
+            if type(previous_value) == HtmlTag:
+                previous_value.nth_child = nth_child;
+            elif type(previous_value) == int:
+                nth_child = previous_value;
+            nth_child += 1;
+            self.selector_path_count[current_selector_path] = nth_child;
+            t.nth_child = nth_child;
+
         # Gather links
         if tag == 'a':
             for (attribute, value) in attrs:
@@ -111,9 +134,9 @@ class PageParser(HTMLParser):
 
     def pop_tag_stack(self):
         if len(self.targets) > 0:
-            current_selector = self.current_selector(self.tag_stack);
+            current_selector_path = self.current_selector(self.tag_stack, use_nth_child = True);
             for target_inst in self.targets:
-                target_inst.process(current_selector, self.tag_stack[-1]);
+                target_inst.process(current_selector_path, self.tag_stack[-1]);
         return self.tag_stack.pop();
 
     
@@ -127,8 +150,6 @@ class PageParser(HTMLParser):
 
         if len(self.tag_stack) == 0:
             self.__components.append(t);
-
-
         
 
     

@@ -9,11 +9,19 @@ class Component:
     def __init__(self, comp_def, comp_idx):
         self.role = comp_def['role'];
         self.format = comp_def['format'];
-        self.preprocess = {};
-        if 'preprocess' in comp_def:
-            self.preprocess = comp_def['preprocess'];
         self.selector = comp_def['selector'];
         self.index = comp_idx;
+        self.constraints = [];
+        if ':' in self.selector:
+            parts = self.selector.split(':');
+            self.selector = parts[0];
+            for i in parts[1:]:
+                self.constraints.append(i);
+
+        self.count = 0;
+
+    def is_match(self, selector):
+        pass;
 
 
 class Target:
@@ -90,13 +98,6 @@ class Target:
                         return False;
                 return True;                
 
-    @staticmethod
-    def selector_in_dict(selector_inst, comp_dict):
-        for key in comp_dict:
-            if Target.is_selector_match(selector_inst, key):
-                return key;
-        return None;
-
 
     def add_component(self, comp, comp_idx = 0, is_inst = False):
         comp_inst = comp;
@@ -115,14 +116,24 @@ class Target:
 
 
     def search_component_by_selector(self, selector_list):
+        print('checking path:', ' > '.join(selector_list));
         pointer = self.component_search_tree;
         for selector in selector_list:
-            key = Target.selector_in_dict(selector, pointer['children']);
-            if not key is None:
+            # key = Target.selector_in_dict(selector, pointer['children']);
+            key = None;
+            for k in pointer['children']:
+                print('checking selector:', selector, ', with key:', k)
+                if Target.is_selector_match(selector, k):
+                    key = k;
+                    break;
+
+            if key is not None:
                 pointer = pointer['children'][key];
             else:
                 return None;
         search_result = pointer['component'];
+        if search_result is not None:
+            print('matched in search tree')
 
         return search_result;
 
@@ -133,25 +144,33 @@ class Target:
         return urllib.parse.urljoin(base_path + '/', './' + hash_sub_path);
 
 
-    def process(self, selector_path, html_container, is_text = False):
+    def process(self, selector_path, html_container):
         selector_list = selector_path;
-        if is_text:
+        if type(selector_path) == str:
             selector_list = selector_path.split(' > ');
 
-        comp = self.search_component_by_selector(selector_path);
+        comp = self.search_component_by_selector(selector_list);
         if comp is None:
             return;
 
+        # Found the target component in the search tree, and store the content
         component_url = None;
         component_text = html_container.text().strip();
 
         if len(component_text) == 0:
             component_text = None;
 
-        if comp.format == 'image' and html_container.tag == 'img' and 'src' in html_container.attrs:
-            component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
+        if comp.format == 'image':
+            if html_container.tag == 'img' and 'src' in html_container.attrs:
+                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
+            elif html_container.tag == 'a' and 'href' in html_container.attrs:
+                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['href']);
+        # filter out the CDN syntax
+        if component_url is not None and '@' in component_url:
+            component_url = '@'.join(component_url.split('@')[:-1]);
+
         
-        comp_desc = 'No. ' + str(comp.index) + ' ' + comp.role + ' [' + comp.format + '] ' + 'in tag <' + html_container.tag +'>'
+        comp_desc = 'No. ' + str(comp.index) + ' ' + comp.role + ' [' + comp.format + '] ' + 'in tag <' + html_container.tag +'> in page ' + self.page_url;
         print('===> storing', comp_desc);
         self.store_component(comp, component_url, component_text);
         print('<=== stored', comp_desc)
@@ -160,7 +179,7 @@ class Target:
 
     def store_component(self, component_instance, component_url = None, component_text = None):
         if self.storage_path is None:
-            self.storage_path = Target.hash_path(self.storage_base_path, self.page_url);
+            self.storage_path = Target.hash_path(urllib.parse.urljoin(self.storage_base_path + '/', './' + self.name), self.page_url);
             if not os.path.exists(self.storage_path):
                 os.makedirs(self.storage_path);
             # store meta data
