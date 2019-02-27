@@ -1,5 +1,5 @@
 from html.parser import HTMLParser
-from urllib import parse
+import urllib
 from html_tag import HtmlTag
 from target_extractor import Target
 # Link structure is yet NOT supportable
@@ -33,7 +33,7 @@ class PageParser(HTMLParser):
         maintaining an inner stack instance to track
         the document structure and the tag container path
     '''
-    def __init__(self, base_url, page_url, white_list = None, target_definition = None):
+    def __init__(self, base_url, page_url, white_list = None, target_definition = None, data_storage_path = './'):
         super().__init__();
         self.base_url = base_url;
         self.page_url = page_url;
@@ -48,7 +48,7 @@ class PageParser(HTMLParser):
         self.targets = [];
         if not target_definition is None:
             for target_def in target_definition:
-                t = Target(target_def);
+                t = Target(base_url, target_def, data_storage_path, page_url);
                 if t.is_page_a_target(self.page_url):
                     self.targets.append(t);
 
@@ -81,7 +81,7 @@ class PageParser(HTMLParser):
         if len(self.white_list) == 0:
             return True;
         else:
-            o = parse.urlparse(url);
+            o = urllib.parse.urlparse(url);
             if o.netloc in self.white_list \
             or o.scheme + '://' + o.netloc in self.white_list:
                 return True;
@@ -100,7 +100,7 @@ class PageParser(HTMLParser):
         if tag == 'a':
             for (attribute, value) in attrs:
                 if attribute == 'href':
-                    url = parse.urljoin(self.base_url, value);
+                    url = urllib.parse.urljoin(self.base_url, value);
                     if self.is_link_in_white_list(url):
                         self.__links.add(url);
 
@@ -113,20 +113,7 @@ class PageParser(HTMLParser):
         if len(self.targets) > 0:
             current_selector = self.current_selector(self.tag_stack);
             for target_inst in self.targets:
-                comp = target_inst.search_component_by_selector(current_selector);
-                if not comp is None:
-                    # pass;
-                    ################################
-                    ### Process the target component
-                    print('');
-                    print('#'*50);
-                    print(self.page_url);
-                    print('*'*50);
-                    print(self.tag_stack[-1].text());
-                    print('#'*50);
-                    print('');
-                    ################################
-
+                target_inst.process(current_selector, self.tag_stack[-1]);
         return self.tag_stack.pop();
 
     
