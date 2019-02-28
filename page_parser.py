@@ -2,6 +2,7 @@ from html.parser import HTMLParser
 import urllib
 from html_tag import HtmlTag
 from target_extractor import Target
+from target_extractor import SelectorNode
 # Link structure is yet NOT supportable
 # class Link:
 #     '''Link instance inside a webpage,
@@ -76,7 +77,7 @@ class PageParser(HTMLParser):
                     selector_path.append(ts);
 
             if len(selector_path) >= 1 \
-               and Target.is_selector_match(selector_path[0], 'html'):
+               and SelectorNode('html').match(selector_path[0]):
                selector_path = selector_path[1:];
 
         if return_text:

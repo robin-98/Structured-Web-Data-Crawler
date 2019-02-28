@@ -3,6 +3,7 @@ from page_parser import PageParser
 from target_extractor import Target
 from domain import *
 from general import *
+import sys;
 
 
 class Spider:
@@ -49,6 +50,9 @@ class Spider:
     # Converts raw response data into readable information and checks for proper html formatting
     @staticmethod
     def gather_links(page_url):
+        if type(page_url) != str or len(page_url) == 0:
+            return set();
+        
         html_string = ''
         try:
             response = urlopen(page_url)
@@ -59,9 +63,9 @@ class Spider:
             # print(html_string)
             parser.feed(html_string)
         except Exception as e:
-            print(str(e))
-            raise e;
-            # return set()
+            print('ERROR when requesting url: [', page_url, '], error message: [', str(e), ']');
+            # raise e;
+            return set()
         return parser.page_links()
         # return set();
 
