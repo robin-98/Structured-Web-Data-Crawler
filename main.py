@@ -13,11 +13,11 @@ if (len(sys.argv) == 1):
 cfg_file = sys.argv[1];
 cfg = read_configure_file(cfg_file);
 
-if "multi-thread-python-spider" not in cfg:
-    print('multi-thread python spider is not configured');
+if "Structured-Web-Data-Crawler" not in cfg:
+    print('Structured Web Data Crawler is not configured');
     sys.exit(1);
 
-cfg = cfg["multi-thread-python-spider"];
+cfg = cfg["Structured-Web-Data-Crawler"];
 # end of read configure file
 
 # Read projects

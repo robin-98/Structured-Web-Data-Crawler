@@ -1,0 +1,36 @@
+{
+  "Structured-Web-Data-Crawler": {
+    "data_dir": "/Users/rin/Dev/startups/Dietition/dat/crawled_sites",
+    "target_sites": [{
+      "project_name": "sina",
+      "version": "20190228",
+      "threads": 4,
+      "base_url": "https://news.sina.com.cn/china",
+      "white_list": [
+        "news.sina.com.cn"
+      ],
+      "target_components": [{
+        "name": "hot_points",
+        "sub_domains": [
+          "news.sina.com.cn"
+        ],
+        "sub_urls": [
+          "/c/2019-02-28"
+        ],
+        "components": [{
+          "role": "photo",
+          "format": "image",
+          "selector": "#article > div > img"
+        },{
+          "role": "title",
+          "format": "text",
+          "selector": "body > div.main-content > h1"
+        },{
+          "role": "article",
+          "format": "text",
+          "selector": "#article"
+        }]
+      }]
+    }]
+  }
+}
