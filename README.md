@@ -63,7 +63,7 @@ The `selector` items can be copied from the Chrome Developer Tools (`Mouse right
 ***
 
 
-The selector is composed with multiple items which connect with ` > `, be careful of the connector, which should be exactly one space and the character `>` and one space. Each item denotes an element in the HTML document tree, and the sequence denotes their hierarchy in the tree.
+The selector is composed with multiple items which are connect with ` > `. *Be careful of the connector, which should be exactly one space plus the character `>` plus one space.* Each item denotes an element in the HTML document tree, and the sequence denotes their hierarchical relationship.
 
 ### Selector item format
 
