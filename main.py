@@ -20,13 +20,23 @@ if "Structured-Web-Data-Crawler" not in cfg:
 cfg = cfg["Structured-Web-Data-Crawler"];
 # end of read configure file
 
+target_site_index = -1;
+if len(sys.argv) > 2:
+    target_site_index = int(sys.argv[2]);
+
+
 # Read projects
 if "target_sites" not in cfg:
     print('can not find target sites in the configure');
     sys.exit(1);
 
 data_dir = cfg["data_dir"];
+idx = -1;
 for site in cfg["target_sites"]:
+  idx += 1;
+  if target_site_index >=0 and idx != target_site_index:
+    continue;
+
   PROJECT_NAME = data_dir + '/' + site['project_name'] +'/' + site['version'];
   HOMEPAGE = site['base_url'];
   DOMAIN_NAME = get_domain_name(HOMEPAGE);

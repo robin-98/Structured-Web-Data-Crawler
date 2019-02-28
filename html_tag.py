@@ -51,6 +51,10 @@ class HtmlTag:
                 result += '.' + self.attrs['class'].replace(' ', '.');
             for a in self.attrs:
                 if a not in ['id', 'class']:
-                    result += ':' + a + '=' + self.attrs[a];
+                    v = self.attrs[a];
+                    if v is not None:
+                        result += ':' + a + '=' + self.attrs[a];
+                    else:
+                        result += ':' + a + '=true';
         return result;
 
