@@ -1,6 +1,6 @@
 {
   "Structured-Web-Data-Crawler": {
-    "data_dir": "/Users/rin/Dev/startups/Dietition/dat/crawled_sites",
+    "data_dir": "./crawled_sites",
     "target_sites": [{
       "project_name": "sina",
       "version": "20190228",
