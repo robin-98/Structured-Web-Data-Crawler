@@ -71,7 +71,9 @@ The selector is composed with multiple items which are connect with ` > `. *Be c
 
 1. **`class`** has the second highest priority: every class name is connected by "`.`" after the `tag name`, such as `div.content.title` means a `div` tag have at least two class names: `content` and `title`
 
-1. Other attributes can also be used, just connect with `:` one by one, such as `input.s-inpt:type=text:name=p:value=priority` means an `input` tag has at least one class name `s-inpt` and at least have three other attributes `type`, `name`, and `value`, which values should be `text`, `p`, and `priority` respectively
+1. Other attributes can also be used, just connect with `:` one by one, such as:
+ `input.s-inpt:type=text:name=p:value=priority`
+means an `input` tag has at least one class name `s-inpt` and at least have three other attributes `type`, `name`, and `value`, which values should be `text`, `p`, and `priority` respectively
 
 
 ## Storage organization
