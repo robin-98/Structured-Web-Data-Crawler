@@ -3,30 +3,6 @@ import urllib
 from html_tag import HtmlTag
 from target_extractor import Target
 from target_extractor import SelectorNode
-# Link structure is yet NOT supportable
-# class Link:
-#     '''Link instance inside a webpage,
-#        to record its parent links and link texts
-#     '''
-#     def __init__(self, url, text):
-#         self.url = url;
-#         self.texts = set();
-#         if not text is None:
-#             self.texts[text] = True;
-
-#         self.parent_links = {};
-
-#     def addParentLink(self, url, text):
-#         if not url in self.parent_links:
-#             p = Link(url, text);
-#             self.parent_links[url] = p;
-#         else:
-#             p = self.parent_links[url];
-#             if not text in p.texts:
-#                 p.texts.add(text);
-
-#     def link_texts(self):
-#         return list(self.texts);
 
 
 class PageParser(HTMLParser):
