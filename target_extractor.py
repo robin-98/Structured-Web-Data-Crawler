@@ -76,9 +76,9 @@ class SelectorNode:
                 if c_inst_type == c_def_type and c_inst_value == c_def_value:
                     is_matched_in_instance = True;
                     break;
-            if not is_matched_in_instance\
-            and c_def_type == 'nth-child'\
-            and c_def_value == 1\
+
+            if c_def_type == 'nth-child'\
+            and c_def_value == '1'\
             and c_inst_nth_child == 0:
                 is_matched_in_instance = True;
 
@@ -140,9 +140,14 @@ class Target:
                 return True;
             else:
                 for su in self.sub_urls:
+                    # if sub url is matched exactly as head substring
                     if su in o.path \
                     and o.path.index(su) == 0:
                         return True;
+                    # if sub url is a regex string
+                    if '\\' in su:
+                        if re.match(su, o.path) is not None:
+                            return True;
         return False;
 
 
@@ -164,7 +169,12 @@ class Target:
 
 
     def search_component_by_selector(self, selector_list):
-        # print('checking path:', ' > '.join(selector_list));
+        # DEBUG
+        if len(selector_list) > 2 and selector_list[0] == 'body' \
+        and re.match(r'div.*\.cover.*', selector_list[-2]) is not None \
+        and re.match(r'img.*', selector_list[-1]) is not None:
+             print('searching', ' > '.join(selector_list));
+        # END OF DEBUG
         pointer = self.component_search_tree;
         for selector in selector_list:
             key = None;
@@ -178,11 +188,8 @@ class Target:
                 pointer = pointer['children'][key];
             else:
                 return None;
-        search_result = pointer['component'];
-        # if search_result is not None:
-            # print('matched in search tree')
 
-        return search_result;
+        return pointer['component'];
 
 
     @staticmethod
@@ -197,6 +204,18 @@ class Target:
             selector_list = selector_path.split(' > ');
 
         comp = self.search_component_by_selector(selector_list);
+
+        # DEBUG
+        # print('search selector instance in component tree:', ' > '.join(selector_list));
+
+        # if len(selector_list) > 1 and selector_list[0] == 'head':
+        #     print('searching', ' > '.join(selector_list));
+
+        # if comp is not None:
+        #     print(' > '.join(selector_list), 'is found');
+        # END OF DEBUG
+
+
         if comp is None:
             return;
 

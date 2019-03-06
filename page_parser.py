@@ -77,7 +77,12 @@ class PageParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         t = HtmlTag(tag, attrs);
         if len(self.tag_stack) > 0:
-            self.tag_stack[-1].addSubTag(t);
+            # close those incorrectlly defined meta and link tags
+            parallelable_tags = ['meta', 'link'];
+            if self.tag_stack[-1].tag in parallelable_tags:
+                self.handle_endtag(self.tag_stack[-1].tag);
+            else:
+                self.tag_stack[-1].addSubTag(t);
 
         self.tag_stack.append(t);
 
