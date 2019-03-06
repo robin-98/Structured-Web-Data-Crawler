@@ -170,10 +170,10 @@ class Target:
 
     def search_component_by_selector(self, selector_list):
         # DEBUG
-        if len(selector_list) > 2 and selector_list[0] == 'body' \
-        and re.match(r'div.*\.cover.*', selector_list[-2]) is not None \
-        and re.match(r'img.*', selector_list[-1]) is not None:
-             print('searching', ' > '.join(selector_list));
+        # if len(selector_list) > 2 and selector_list[0] == 'body' \
+        # and re.match(r'div.*\.cover.*', selector_list[-2]) is not None \
+        # and re.match(r'img.*', selector_list[-1]) is not None:
+        #      print('searching', ' > '.join(selector_list));
         # END OF DEBUG
         pointer = self.component_search_tree;
         for selector in selector_list:
