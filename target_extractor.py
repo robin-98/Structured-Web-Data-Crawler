@@ -1,111 +1,17 @@
 from html_tag import HtmlTag
+from selector_node import SelectorNode
+from selector_search_tree_component import Component
+from selector_search_tree_node import SelectorSearchTreeNode
 import urllib
 import re
 import hashlib
 import os
 
-class SelectorNode:
-
-    def __init__(self, selector_str):
-        self.selector = selector_str;
-        (self.tag, self.classes, self.constraints) = SelectorNode.parse_selector(selector_str);
-        
-
-    @staticmethod
-    def parse_selector(selector_str):
-        tag = selector_str;
-        constraints = [];
-        if ':' in selector_str:
-            parts = selector_str.split(':');
-            tag = parts[0];
-            for c in parts[1:]:
-                constraints.append(SelectorNode.parse_constraint(c));
-        classes = set();
-        if '.' in tag:
-            parts = tag.split('.');
-            tag = parts[0];
-            for c in parts[1:]:
-                classes.add(c);
-        return (tag, classes, constraints);
-
-    @staticmethod
-    def parse_constraint(constraint_str):
-        (constraint_type, constraint_value) = (None, None);
-        if '=' in constraint_str:
-            parts = constraint_str.split('=');
-            constraint_type = parts[0];
-            constraint_value = '='.join(parts[1:]);
-        elif 'nth-child' in constraint_str:
-            values = re.findall(r'\d+', constraint_str);
-            if len(values) > 0:
-                constraint_type = 'nth-child';
-                constraint_value = values[0];
-        return (constraint_type, constraint_value);
-
-
-    def match(self, selector_instance):
-        # First, check the selector by its id, and other situations if they match literally
-        if selector_instance == self.selector:
-            return True;
-
-
-        (tag, classes, constraints) = SelectorNode.parse_selector(selector_instance);
-        # For other situations which do not require element id,
-        # the tag should be checked at first
-        if tag != self.tag:
-            return False;
-
-        # Then their classes should be checked before checking any constraints
-        # classes of component definition could be less than instance, 
-        # such as, for some place in page the tag could be 'div.main-content.w1240'
-        # but in the definition, we can only us 'dev.main-content'
-        # because the class 'w.1240' is responsive design element which could change
-        # which means every class in the component definition should match in the instance
-        for c in self.classes:
-            if c not in classes:
-                return False;
-
-        # Third, check the selector by its constraints
-        # every constraint in the component definition should match in the instance
-        for (c_def_type, c_def_value) in self.constraints:
-            is_matched_in_instance = False;
-            c_inst_nth_child = 0;
-            for (c_inst_type, c_inst_value) in constraints:
-                if c_inst_type == 'nth-child':
-                    c_inst_nth_child = c_inst_value;
-                if c_inst_type == c_def_type and c_inst_value == c_def_value:
-                    is_matched_in_instance = True;
-                    break;
-
-            if c_def_type == 'nth-child'\
-            and c_def_value == '1'\
-            and c_inst_nth_child == 0:
-                is_matched_in_instance = True;
-
-            if not is_matched_in_instance:
-                return False;
-
-        # If can NOT find and violation, which means the instance matches all constraints
-        return True;
-
-
-class Component:
-
-    def __init__(self, comp_def, comp_idx):
-        self.role = comp_def['role'];
-        self.format = comp_def['format'];
-        self.selector = comp_def['selector'];
-        self.index = comp_idx;
-
 
 class Target:
 
     def __init__(self, base_url, target_def, storage_base_path, page_url):
-        self.component_search_tree = {
-            'component': None,
-            'selector_node': None,
-            'children': {}
-        };
+        self.component_search_tree = SelectorSearchTreeNode();
         self.set_target(target_def);
         self.storage_base_path = storage_base_path;
         self.base_url = base_url;
@@ -158,14 +64,10 @@ class Target:
 
         pointer = self.component_search_tree;
         for s in comp_inst.selector.split(' > '):
-            if s not in pointer['children']:
-                pointer['children'][s] = {
-                    'component': None,
-                    'selector_node': SelectorNode(s),
-                    'children': {}
-                };
-            pointer = pointer['children'][s];
-        pointer['component'] = comp_inst;
+            if s not in pointer.children:
+                pointer.children[s] = SelectorSearchTreeNode(selector_node = SelectorNode(s));
+            pointer = pointer.children[s];
+        pointer.component = comp_inst;
 
 
     def search_component_by_selector(self, selector_list):
@@ -178,18 +80,18 @@ class Target:
         pointer = self.component_search_tree;
         for selector in selector_list:
             key = None;
-            for k in pointer['children']:
-                selector_node = pointer['children'][k]['selector_node'];
+            for k in pointer.children:
+                selector_node = pointer.children[k].selector_node;
                 if selector_node.match(selector):
                     key = k;
                     break;
 
             if key is not None:
-                pointer = pointer['children'][key];
+                pointer = pointer.children[key];
             else:
                 return None;
 
-        return pointer['component'];
+        return pointer.component;
 
 
     @staticmethod
@@ -215,13 +117,16 @@ class Target:
         #     print(' > '.join(selector_list), 'is found');
         # END OF DEBUG
 
-
         if comp is None:
             return;
 
         # Found the target component in the search tree, and store the content
         component_url = None;
         component_text = html_container.text().strip();
+        if comp.content_property is not None:
+            p = comp.content_property;
+            if p in html_container.attrs:
+                component_text = html_container.attrs[p].strip();
 
         if len(component_text) == 0:
             component_text = None;
@@ -235,11 +140,17 @@ class Target:
         if component_url is not None and '@' in component_url:
             component_url = '@'.join(component_url.split('@')[:-1]);
 
-        
-        comp_desc = 'No. ' + str(comp.index) + ' ' + comp.role + ' [' + comp.format + '] ' + 'in tag <' + html_container.tag +'> in page ' + self.page_url;
-        print('===> storing', comp_desc);
-        self.store_component(comp, component_url, component_text);
-        print('<=== stored', comp_desc)
+        if len(comp.sub_components) > 0:
+            print(html_container);
+            # for sub_comp in comp.sub_components:
+            # Each element in the html_container should be examed to know whether it is a target component and write down its content with its index
+
+
+        else:
+            comp_desc = 'No. ' + str(comp.index) + ' ' + comp.role + ' [' + comp.format + '] ' + 'in tag <' + html_container.tag +'> in page ' + self.page_url;
+            print('===> storing', comp_desc);
+            self.store_component(comp, component_url, component_text);
+            print('<=== stored', comp_desc)
 
 
 
