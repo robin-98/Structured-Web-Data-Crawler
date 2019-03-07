@@ -18,6 +18,25 @@ class HtmlTag:
     def addText(self, text):
         self.contents.append(text);
 
+    def sub_tags(self):
+        return [c for c in self.contents if type(c) == HtmlTag];
+
+    def all_sub_tags(self):
+        result = [];
+        for t in self.sub_tags():
+            x = t.sub_tags();
+            result += x;
+        return result;
+
+    def all_sub_selectors(self):
+        result = [];
+        self_selector = self.selector();
+        for t in self.sub_tags():
+            result.append(self_selector + ' > ' + t.selector());
+            for s in t.all_sub_selectors():
+                result.append(self_selector + ' > ' + s);
+        return result;
+
 
     def text(self):
         content = '';
@@ -38,6 +57,12 @@ class HtmlTag:
     # gennerate the jQuery style element selector for the tag instance
     def selector(self):
         result = self.selector_without_nth_child();
+        if self.nth_child > 0:
+            result += ':nth-child(' + str(self.nth_child) + ')';
+        return result;
+
+    def selector_only_nth_child(self):
+        result = self.tag;
         if self.nth_child > 0:
             result += ':nth-child(' + str(self.nth_child) + ')';
         return result;

@@ -34,7 +34,7 @@ class PageParser(HTMLParser):
         self.selector_path_count = {};
 
 
-    def current_selector(self, tags = None, return_text=False, use_nth_child=False):
+    def current_selector(self, tags = None, return_text=False, use_nth_child=False, only_use_nth_child=False):
         tag_stack = tags;
         if tags is None:
             tag_stack = self.tag_stack;
@@ -46,6 +46,8 @@ class PageParser(HTMLParser):
                 ts = None;
                 if use_nth_child:
                     ts = t.selector();
+                elif only_use_nth_child:
+                    ts = t.selector_only_nth_child();
                 else:
                     ts = t.selector_without_nth_child();
 
@@ -54,7 +56,7 @@ class PageParser(HTMLParser):
                 else:
                     selector_path.append(ts);
 
-            if len(selector_path) >= 1 \
+            if len(selector_path) > 0 \
                and SelectorNode('html').match(selector_path[0]):
                selector_path = selector_path[1:];
 
@@ -89,7 +91,7 @@ class PageParser(HTMLParser):
         self.tag_stack.append(t);
 
         # count the children index
-        current_selector_path = self.current_selector(return_text = True, use_nth_child = False);
+        current_selector_path = self.current_selector(return_text = True, only_use_nth_child = True);
         if current_selector_path not in self.selector_path_count:
             self.selector_path_count[current_selector_path] = t;
         else:
@@ -102,6 +104,11 @@ class PageParser(HTMLParser):
             nth_child += 1;
             self.selector_path_count[current_selector_path] = nth_child;
             t.nth_child = nth_child;
+        
+        # DEBUG NTH-CHILD OF TD IN TABLE
+        # if tag == 'td':
+        #     print(current_selector_path, self.selector_path_count[current_selector_path]);
+        # END OF DEBUG
 
         # Gather links
         if tag == 'a':

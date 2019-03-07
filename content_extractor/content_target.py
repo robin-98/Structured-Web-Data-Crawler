@@ -121,14 +121,15 @@ class ContentTarget:
             return;
 
         if len(comp.sub_components) > 0:
-            print(html_container);
+            # print(html_container.sub_tags());
             # for sub_comp in comp.sub_components:
             # Each element in the html_container should be examed to know whether it is a target component and write down its content with its index
-
+            # for s in html_container.all_sub_selectors():
+            #     print(s);
 
         else:
             # DEBUG MULTI SUB COMPONENT
-            # return;
+            return;
             # END OF DEBUG
 
             # Found the target component in the search tree, and store the content
