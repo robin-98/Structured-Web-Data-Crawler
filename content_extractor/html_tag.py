@@ -21,20 +21,15 @@ class HtmlTag:
     def sub_tags(self):
         return [c for c in self.contents if type(c) == HtmlTag];
 
-    def all_sub_tags(self):
-        result = [];
-        for t in self.sub_tags():
-            x = t.sub_tags();
-            result += x;
-        return result;
-
     def all_sub_selectors(self):
         result = [];
         self_selector = self.selector();
         for t in self.sub_tags():
-            result.append(self_selector + ' > ' + t.selector());
-            for s in t.all_sub_selectors():
-                result.append(self_selector + ' > ' + s);
+            s = self_selector + ' > ' + t.selector();
+            result.append({'tag': t, 'selector': s});
+            for st in t.all_sub_selectors():
+                st['selector'] = self_selector + ' > ' + st['selector'];
+                result.append(st);
         return result;
 
 
