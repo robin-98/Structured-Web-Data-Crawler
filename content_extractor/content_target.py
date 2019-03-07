@@ -1,4 +1,4 @@
-from html_tag import HtmlTag
+from content_extractor.html_tag import HtmlTag
 from content_extractor.selector_node import SelectorNode
 from content_extractor.selector_search_tree_component import Component
 from content_extractor.selector_search_tree_node import SelectorSearchTreeNode
@@ -120,26 +120,6 @@ class ContentTarget:
         if comp is None:
             return;
 
-        # Found the target component in the search tree, and store the content
-        component_url = None;
-        component_text = html_container.text().strip();
-        if comp.content_property is not None:
-            p = comp.content_property;
-            if p in html_container.attrs:
-                component_text = html_container.attrs[p].strip();
-
-        if len(component_text) == 0:
-            component_text = None;
-
-        if comp.format == 'image':
-            if html_container.tag == 'img' and 'src' in html_container.attrs:
-                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
-            elif html_container.tag == 'a' and 'href' in html_container.attrs:
-                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['href']);
-        # filter out the CDN syntax
-        if component_url is not None and '@' in component_url:
-            component_url = '@'.join(component_url.split('@')[:-1]);
-
         if len(comp.sub_components) > 0:
             print(html_container);
             # for sub_comp in comp.sub_components:
@@ -147,11 +127,33 @@ class ContentTarget:
 
 
         else:
+            # DEBUG MULTI SUB COMPONENT
+            return;
+            # END OF DEBUG
+
+            # Found the target component in the search tree, and store the content
+            component_url = None;
+            component_text = html_container.text().strip();
+            if comp.content_property is not None:
+                p = comp.content_property;
+                if p in html_container.attrs:
+                    component_text = html_container.attrs[p].strip();
+
+            if len(component_text) == 0:
+                component_text = None;
+
+            if comp.format == 'image':
+                if html_container.tag == 'img' and 'src' in html_container.attrs:
+                    component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
+                elif html_container.tag == 'a' and 'href' in html_container.attrs:
+                    component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['href']);
+            # filter out the CDN syntax
+            if component_url is not None and '@' in component_url:
+                component_url = '@'.join(component_url.split('@')[:-1]);
             comp_desc = 'No. ' + str(comp.index) + ' ' + comp.role + ' [' + comp.format + '] ' + 'in tag <' + html_container.tag +'> in page ' + self.page_url;
             print('===> storing', comp_desc);
             self.store_component(comp, component_url, component_text);
             print('<=== stored', comp_desc)
-
 
 
     def store_component(self, component_instance, component_url = None, component_text = None):

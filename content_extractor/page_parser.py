@@ -1,8 +1,10 @@
 from html.parser import HTMLParser
 import urllib
-from html_tag import HtmlTag
-from target_extractor import Target
-from target_extractor import SelectorNode
+from content_extractor.html_tag import HtmlTag
+
+
+from content_extractor.content_target import ContentTarget
+from content_extractor.selector_node import SelectorNode
 
 
 class PageParser(HTMLParser):
@@ -25,7 +27,7 @@ class PageParser(HTMLParser):
         self.targets = [];
         if not target_definition is None:
             for target_def in target_definition:
-                t = Target(base_url, target_def, data_storage_path, page_url);
+                t = ContentTarget(base_url, target_def, data_storage_path, page_url);
                 if t.is_page_a_target(self.page_url):
                     self.targets.append(t);
 

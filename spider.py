@@ -1,10 +1,8 @@
 from urllib.request import urlopen
-from page_parser import PageParser
-from target_extractor import Target
+from content_extractor.page_parser import PageParser
 from domain import *
 from general import *
 import sys;
-
 
 class Spider:
 
@@ -64,7 +62,7 @@ class Spider:
             parser.feed(html_string)
         except Exception as e:
             print('ERROR when requesting url: [', page_url, '], error message: [', str(e), ']');
-            # raise e;
+            raise e;
             return set()
         return parser.page_links()
         # return set();
