@@ -104,11 +104,6 @@ class PageParser(HTMLParser):
             nth_child += 1;
             self.selector_path_count[current_selector_path] = nth_child;
             t.nth_child = nth_child;
-        
-        # DEBUG NTH-CHILD OF TD IN TABLE
-        # if tag == 'td':
-        #     print(current_selector_path, self.selector_path_count[current_selector_path]);
-        # END OF DEBUG
 
         # Gather links
         if tag == 'a':

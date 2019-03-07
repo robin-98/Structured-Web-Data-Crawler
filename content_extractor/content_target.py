@@ -129,7 +129,7 @@ class ContentTarget:
 
         else:
             # DEBUG MULTI SUB COMPONENT
-            return;
+            # return;
             # END OF DEBUG
 
             # Found the target component in the search tree, and store the content
