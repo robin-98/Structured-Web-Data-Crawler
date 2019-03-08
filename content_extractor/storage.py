@@ -7,6 +7,7 @@ class StorageWrapper:
     def __init__(self, storage_base_path, storage_def):
         self.format = 'text';
         self.pages_per_dir = 1;
+        self.use_naive_storage = True;
 
         self.path = None;
         self.base_path = './';
@@ -19,15 +20,22 @@ class StorageWrapper:
 
         if 'format' in storage_def:
             self.format = storage_def['format'];
+            self.use_naive_storage = False;
 
         if 'pages_per_dir' in storage_def:
             self.pages_per_dir = storage_def['pages_per_dir'];
 
     @staticmethod
-    def hash_path(base_path, sub_path):
+    def hash_path(base_path, sub_path, sub_directory_name = ''):
         hash_sub_path = hashlib.sha256(sub_path.encode('utf-8')).hexdigest();
-        return urllib.parse.urljoin(base_path + '/', './' + hash_sub_path);
+        if sub_directory_name == '':
+            return urllib.parse.urljoin(base_path + '/', './' + hash_sub_path);
+        else:
+            return urllib.parse.urljoin( urllib.parse.urljoin(base_path + '/', './' + sub_directory_name) + '/', './' + hash_sub_path);
 
+
+
+    # Should be deprecated
     def store_component_naively(self, page_url, target_name, component_instance, component_url = None, component_text = None):
         if self.path is None:
             self.path = StorageWrapper.hash_path(urllib.parse.urljoin(self.base_path + '/', './' + target_name), page_url);

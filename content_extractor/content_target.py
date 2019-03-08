@@ -5,15 +5,15 @@ from content_extractor.selector_search_tree_node import SelectorSearchTreeNode
 from content_extractor.storage import StorageWrapper
 import urllib
 import re
-
+import json
 
 class ContentTarget:
 
-    def __init__(self, base_url, target_def, storage_base_path, page_url):
+    def __init__(self, base_url, target_def, storage_base_path):
         self.component_search_tree = SelectorSearchTreeNode();
         self.set_target(target_def, storage_base_path);
         self.base_url = base_url;
-        self.page_url = page_url;
+        self.content = {};
 
     def set_target(self, target_def, storage_base_path):
         self.name = target_def['name'];
@@ -73,8 +73,16 @@ class ContentTarget:
             pointer = pointer.children[s];
         pointer.component = comp_inst;
 
-        for sub_comp in comp_inst.sub_components:
-            self.add_component(sub_comp);
+        if type(comp) != Component:
+            idx = 0;
+            for t in ['columns', 'sub_components']:
+                if t in comp:
+                    for sub_def in comp[t]:
+                        sub_comp = Component(sub_def, idx);
+                        comp_inst.add_sub_component(sub_comp);
+                        self.add_component(sub_comp);
+                        idx += 1;
+
 
     def search_component_by_selector(self, selector_path_or_list):
         
@@ -113,8 +121,46 @@ class ContentTarget:
         return pointer.component;
 
 
-    def process(self, selector_path, html_container):
-        self.gather_content(selector_path, html_container);
+    def process_tag(self, page_url, selector_path, html_container):
+        (comp_inst, comp_content) = self.gather_content(selector_path, html_container);
+        if comp_inst is not None:
+            if page_url not in self.content:
+                self.content[page_url] = {};
+            content = self.content[page_url];
+            if comp_inst.parent is None:
+                content[comp_inst.role] = comp_content;
+            else:
+                # Create path for that component
+                path = [];
+                tmp_inst = comp_inst;
+                while tmp_inst.parent is not None:
+                    tmp_inst = tmp_inst.parent;
+                    path.append(tmp_inst);
+                pointer = content;
+                for i in range(len(path)-1, -1, -1):
+                    tmp_inst = path[i];
+                    if tmp_inst.role not in pointer:
+                        pointer[tmp_inst.role] = {};
+                        pointer = pointer[tmp_inst.role];
+                    elif i != len(path)-1 and tmp_inst.index > 0:
+                        if type(pointer[tmp_inst.role]) != list:
+                            pointer[tmp_inst.role] = [pointer[tmp_inst.role]];
+                        while tmp_inst.index >= len(pointer[tmp_inst.role]):
+                            pointer[tmp_inst.role].append({});
+                        pointer = pointer[tmp_inst.role][tmp_inst.index];
+                # Now pointer is the very parent of comp_inst
+                if comp_inst.role not in pointer:
+                    pointer[comp_inst.role] = comp_content;
+                else:
+                    if type(pointer[comp_inst.role]) != list:
+                        pointer[comp_inst.role] = [pointer[comp_inst.role]];
+                    pointer[comp_inst.role].append(comp_content);
+
+
+    def end(self, page_url):
+        print(self.content[page_url]);
+        del self.content[page_url];
+
         
 
     def gather_content(self, selector_path, html_container):
@@ -122,61 +168,50 @@ class ContentTarget:
         if type(selector_path) == str:
             selector_list = selector_path.split(' > ');
 
+        result = '';
+
         comp = self.search_component_by_selector(selector_list);
 
-        # DEBUG
-        # print('search selector instance in component tree:', ' > '.join(selector_list));
-
-        # if len(selector_list) > 1 and selector_list[0] == 'head':
-        #     print('searching', ' > '.join(selector_list));
-
-        # if comp is not None:
-        #     print(' > '.join(selector_list), 'is found');
-        # END OF DEBUG
-
         if comp is None:
-            return;
+            return (comp, result);
 
-        if len(comp.sub_components) > 0:
-            # print(html_container.sub_tags());
-            # for sub_comp in comp.sub_components:
-            # Each element in the html_container should be examed to know whether it is a target component and write down its content with its index
-            for s in html_container.all_sub_selectors():
-                parts = s['selector'].split(' > ');
-                if len(parts) < 2:
-                    continue;
-                sub_selector = comp.selector + ' > ' + ' > '.join(parts[1:]);
-                self.gather_content(sub_selector, s['tag']);
+        # Found the target component in the search tree, and store the content
+        component_url = None;
+        component_text = html_container.text().strip();
+        if comp.content_property is not None:
+            p = comp.content_property;
+            if p in html_container.attrs:
+                component_text = html_container.attrs[p].strip();
 
+        if comp.format == 'image':
+            if html_container.tag == 'img' and 'src' in html_container.attrs:
+                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
+            elif html_container.tag == 'a' and 'href' in html_container.attrs:
+                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['href']);
+
+        # filter out the CDN syntax
+        if comp.format == 'image' and component_url is not None\
+        and '@' in component_url:
+            component_url = '@'.join(component_url.split('@')[:-1]);
+
+        # process the content of single item:
+        if comp.format == 'image':
+            result = component_url;
+        elif comp.format == 'text':
+            result = component_text;
+        elif comp.format == 'json':
+            try:
+                result = json.loads(component_text);
+            except Exception as e:
+                print('ERROR when parsing component', str(e));
+            else:
+                pass
+            finally:
+                pass
         else:
-            # DEBUG MULTI SUB COMPONENT
-            # return;
-            # END OF DEBUG
+            pass;
 
-            # Found the target component in the search tree, and store the content
-            component_url = None;
-            component_text = html_container.text().strip();
-            if comp.content_property is not None:
-                p = comp.content_property;
-                if p in html_container.attrs:
-                    component_text = html_container.attrs[p].strip();
-
-            if len(component_text) == 0:
-                component_text = None;
-
-            if comp.format == 'image':
-                if html_container.tag == 'img' and 'src' in html_container.attrs:
-                    component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
-                elif html_container.tag == 'a' and 'href' in html_container.attrs:
-                    component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['href']);
-
-            # filter out the CDN syntax
-            if component_url is not None and '@' in component_url:
-                component_url = '@'.join(component_url.split('@')[:-1]);
-            comp_desc = 'No. ' + str(comp.index) + ' ' + comp.role + ' [' + comp.format + '] ' + 'in tag <' + html_container.tag +'> in page ' + self.page_url;
-            print('===> storing', comp_desc);
-            self.storage.store_component_naively(self.page_url, self.name, comp, component_url, component_text);
-            print('<=== stored', comp_desc)
+        return (comp, result);
 
 
     

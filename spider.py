@@ -1,5 +1,7 @@
 from urllib.request import urlopen
 from content_extractor.page_parser import PageParser
+from content_extractor.storage import StorageWrapper
+from content_extractor.content_target import ContentTarget
 from domain import *
 from general import *
 import sys;
@@ -22,6 +24,13 @@ class Spider:
         Spider.crawled_file = Spider.project_name + '/crawled.txt'
         Spider.white_list = white_list;
         Spider.target_definition = target_definition;
+
+        Spider.targets = [];
+        if target_definition is not None:
+            for target_def in target_definition:
+                t = ContentTarget(base_url, target_def, storage_base_path = project_name);
+                Spider.targets.append(t);
+
         self.boot()
         self.crawl_page('First spider', Spider.base_url)
 
@@ -57,8 +66,8 @@ class Spider:
             if 'text/html' in response.getheader('Content-Type'):
                 html_bytes = response.read()
                 html_string = html_bytes.decode("utf-8")
-            parser = PageParser(Spider.base_url, page_url, Spider.white_list, Spider.target_definition, Spider.project_name)
-            # print(html_string)
+            parser = PageParser(Spider.base_url, page_url, Spider.white_list);
+            parser.add_targets(Spider.targets);
             parser.feed(html_string)
         except Exception as e:
             print('ERROR when requesting url: [', page_url, '], error message: [', str(e), ']');

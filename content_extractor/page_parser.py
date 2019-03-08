@@ -12,7 +12,7 @@ class PageParser(HTMLParser):
         maintaining an inner stack instance to track
         the document structure and the tag container path
     '''
-    def __init__(self, base_url, page_url, white_list = None, target_definition = None, data_storage_path = './'):
+    def __init__(self, base_url, page_url, white_list = None):
         super().__init__();
         self.base_url = base_url;
         self.page_url = page_url;
@@ -25,13 +25,20 @@ class PageParser(HTMLParser):
             self.white_list = white_list;
 
         self.targets = [];
-        if not target_definition is None:
-            for target_def in target_definition:
-                t = ContentTarget(base_url, target_def, data_storage_path, page_url);
-                if t.is_page_a_target(self.page_url):
-                    self.targets.append(t);
-
+        
         self.selector_path_count = {};
+
+    def add_targets(self, content_target_insts):
+        if type(content_target_insts) != list:
+            return;
+        for t in content_target_insts:
+            self.add_target(t);
+
+    def add_target(self, content_target_inst):
+        if content_target_inst is None or type(content_target_inst) != ContentTarget:
+            return;
+        if content_target_inst.is_page_a_target(self.page_url):
+            self.targets.append(content_target_inst);
 
 
     def current_selector(self, tags = None, return_text=False, use_nth_child=False, only_use_nth_child=False):
@@ -122,7 +129,7 @@ class PageParser(HTMLParser):
         if len(self.targets) > 0:
             current_selector_path = self.current_selector(self.tag_stack, use_nth_child = True);
             for target_inst in self.targets:
-                target_inst.process(current_selector_path, self.tag_stack[-1]);
+                target_inst.process_tag(self.page_url, current_selector_path, self.tag_stack[-1]);
         return self.tag_stack.pop();
 
     
@@ -136,6 +143,10 @@ class PageParser(HTMLParser):
 
         if len(self.tag_stack) == 0:
             self.__components.append(t);
+
+        if tag == 'html':
+            for target_inst in self.targets:
+                target_inst.end(self.page_url);
         
 
     

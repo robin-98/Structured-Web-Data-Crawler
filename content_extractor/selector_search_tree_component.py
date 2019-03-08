@@ -25,14 +25,7 @@ class Component:
         if 'sub_selector' in comp_def:
             self.sub_selector = comp_def['sub_selector'];
 
-        self.sub_components= [];
-        idx = 0;
-        for t in ['columns', 'sub_components']:
-            if t in comp_def:
-                for column_def in comp_def[t]:
-                    column_comp = Component(column_def, idx);
-                    self.add_sub_component(column_comp);
-                    idx += 1;
+        self.parent = None;
 
     def add_sub_component(self, sub_comp):
         if sub_comp is None:
@@ -42,4 +35,4 @@ class Component:
         and sub_comp.selector is None:
             sub_comp.selector = self.selector + ' > ' + sub_comp.sub_selector;
 
-        self.sub_components.append(sub_comp);
+        sub_comp.parent = self;
