@@ -8,7 +8,7 @@ class Component:
             self.role = comp_def['name'];
 
         self.format = 'text';
-        if 'format' in comp_def['format']:
+        if 'format' in comp_def:
             self.format = comp_def['format'];
 
         self.selector = None;

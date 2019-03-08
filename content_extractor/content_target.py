@@ -77,15 +77,20 @@ class ContentTarget:
             self.add_component(sub_comp);
 
     def search_component_by_selector(self, selector_path_or_list):
-        # DEBUG
-        # if len(selector_list) > 2 and selector_list[0] == 'body' \
-        # and re.match(r'div.*\.cover.*', selector_list[-2]) is not None \
-        # and re.match(r'img.*', selector_list[-1]) is not None:
-        #      print('searching', ' > '.join(selector_list));
-        # END OF DEBUG
+        
         selector_list = selector_path_or_list;
         if type(selector_path_or_list) == str:
             selector_list = selector_path_or_list.split(' > ');
+
+        # DEBUG
+        # print('searching', ' > '.join(selector_list));
+        # is_debugging = False;
+        # if len(selector_list) > 2 and selector_list[0] == 'body' \
+        # and re.match(r'div.*\.cover.*', selector_list[-2]) is not None \
+        # and re.match(r'img.*', selector_list[-1]) is not None:
+        #     is_debugging = True;
+        #     print('searching', ' > '.join(selector_list));
+        # END OF DEBUG
 
         pointer = self.component_search_tree;
         for selector in selector_list:
@@ -100,6 +105,10 @@ class ContentTarget:
                 pointer = pointer.children[key];
             else:
                 return None;
+        # DEBUG
+        # if is_debugging and pointer.component is not None:
+        #     print('found', pointer.component.role, pointer.component.format)
+        # END OF DEBUG
 
         return pointer.component;
 
@@ -160,6 +169,7 @@ class ContentTarget:
                     component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
                 elif html_container.tag == 'a' and 'href' in html_container.attrs:
                     component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['href']);
+
             # filter out the CDN syntax
             if component_url is not None and '@' in component_url:
                 component_url = '@'.join(component_url.split('@')[:-1]);

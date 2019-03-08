@@ -58,3 +58,4 @@ class StorageWrapper:
             print('data file:', data_file_name);
             with open(data_file_name, 'w') as f:
                 f.write(component_text);
+
