@@ -36,7 +36,7 @@ class ContentTarget:
         storage_def = None;
         if 'storage' in target_def:
             storage_def = target_def['storage'];
-        self.storage = StorageWrapper(storage_base_path, storage_def);
+        self.storage = StorageWrapper(storage_base_path, storage_def, self.name);
 
 
 
@@ -122,7 +122,7 @@ class ContentTarget:
 
 
     def process_tag(self, page_url, selector_path, html_container):
-        (comp_inst, comp_content) = self.gather_content(selector_path, html_container);
+        (comp_inst, comp_content) = self.gather_content(selector_path, html_container, page_url);
         if comp_inst is not None:
             if page_url not in self.content:
                 self.content[page_url] = {};
@@ -156,14 +156,9 @@ class ContentTarget:
                         pointer[comp_inst.role] = [pointer[comp_inst.role]];
                     pointer[comp_inst.role].append(comp_content);
 
-
-    def end(self, page_url):
-        print(self.content[page_url]);
-        del self.content[page_url];
-
         
 
-    def gather_content(self, selector_path, html_container):
+    def gather_content(self, selector_path, html_container, page_url):
         selector_list = selector_path;
         if type(selector_path) == str:
             selector_list = selector_path.split(' > ');
@@ -196,7 +191,8 @@ class ContentTarget:
 
         # process the content of single item:
         if comp.format == 'image':
-            result = component_url;
+            # Store the image in current page directory with a hash name
+            result = self.storage.store_resource(component_url, comp.format, page_url);
         elif comp.format == 'text':
             result = component_text;
         elif comp.format == 'json':
@@ -214,7 +210,15 @@ class ContentTarget:
         return (comp, result);
 
 
-    
+    def end_page(self, page_url):
+        file_path = self.storage.store_page(self.content[page_url], page_url);
+        print('data file stored:', file_path);
+        print(self.content[page_url]);
+        del self.content[page_url];
+
+
+    def end_spider(self):
+        self.storage.save_meta();
 
 
 

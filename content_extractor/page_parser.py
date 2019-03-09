@@ -146,7 +146,7 @@ class PageParser(HTMLParser):
 
         if tag == 'html':
             for target_inst in self.targets:
-                target_inst.end(self.page_url);
+                target_inst.end_page(self.page_url);
         
 
     
