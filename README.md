@@ -13,7 +13,7 @@ It can crawl websites according to a JSON configuration file, in which you can s
 
 Let's take one of the most popular news website in China as example:
 
-```json
+```javascript
 {
   "Structured-Web-Data-Crawler": { // This is the name of the crawler
     "data_dir": "./crawled_sites", // Location to store data files
