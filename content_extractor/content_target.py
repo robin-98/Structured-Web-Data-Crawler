@@ -90,16 +90,6 @@ class ContentTarget:
         if type(selector_path_or_list) == str:
             selector_list = selector_path_or_list.split(' > ');
 
-        # DEBUG
-        # print('searching', ' > '.join(selector_list));
-        # is_debugging = False;
-        # if len(selector_list) > 2 and selector_list[0] == 'body' \
-        # and re.match(r'div.*\.cover.*', selector_list[-2]) is not None \
-        # and re.match(r'img.*', selector_list[-1]) is not None:
-        #     is_debugging = True;
-        #     print('searching', ' > '.join(selector_list));
-        # END OF DEBUG
-
         pointer = self.component_search_tree;
         for selector in selector_list:
             key = None;
@@ -113,10 +103,6 @@ class ContentTarget:
                 pointer = pointer.children[key];
             else:
                 return None;
-        # DEBUG
-        # if is_debugging and pointer.component is not None:
-        #     print('found', pointer.component.role, pointer.component.format)
-        # END OF DEBUG
 
         return pointer.component;
 
@@ -192,6 +178,8 @@ class ContentTarget:
         # process the content of single item:
         if comp.format == 'image':
             # Store the image in current page directory with a hash name
+            print('retrieving resource:', component_url);
+            result = component_url;
             result = self.storage.store_resource(component_url, comp.format, page_url);
         elif comp.format == 'text':
             result = component_text;
@@ -212,8 +200,7 @@ class ContentTarget:
 
     def end_page(self, page_url):
         file_path = self.storage.store_page(self.content[page_url], page_url);
-        print('data file stored:', file_path);
-        print(self.content[page_url]);
+        return file_path;
         del self.content[page_url];
 
 

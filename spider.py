@@ -1,4 +1,6 @@
 from urllib.request import urlopen
+from urllib.request import Request
+from urllib.error import HTTPError
 from content_extractor.page_parser import PageParser
 from content_extractor.storage import StorageWrapper
 from content_extractor.content_target import ContentTarget
@@ -61,17 +63,25 @@ class Spider:
             return set();
         
         html_string = ''
+        response = None;
         try:
-            response = urlopen(page_url)
+            # req = Request(page_url,
+            #         data = None,
+            #         headers = {
+            #             'User-Agent': 'Mozilla/5.0 (iPod; CPU iPhone OS 12_0 like macOS) AppleWebKit/602.1.50 (KHTML, like Gecko) Version/12.0 Mobile/14A5335d Safari/602.1.50'
+            #         });
+            # response = urlopen(req);
+            response = urlopen(page_url);
             if 'text/html' in response.getheader('Content-Type'):
                 html_bytes = response.read()
                 html_string = html_bytes.decode("utf-8")
             parser = PageParser(Spider.base_url, page_url, Spider.white_list);
             parser.add_targets(Spider.targets);
             parser.feed(html_string)
-        except Exception as e:
-            print('ERROR when requesting url: [', page_url, '], error message: [', str(e), ']');
-            raise e;
+        except HTTPError as e:
+            # raise HTTPError(req.full_url, code, msg, hdrs, fp)
+            print('ERROR when requesting url: [', page_url, '], error code:', e.code, ' error message: [', e.msg, '], http headers:', e.hdrs);
+            # raise e;
             return set()
         return parser.page_links()
         # return set();

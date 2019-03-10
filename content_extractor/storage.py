@@ -69,7 +69,11 @@ class StorageWrapper:
             file_name += '_raw.txt';
        
         file_path = self.current_directory(page_url) + '/' + file_name;
-        urlretrieve(resource_url, file_path);
+        try:
+            urlretrieve(resource_url, file_path);
+        except Exception as e:
+            print('ERROR when retrieving resource:',resource_url,'error message:', str(e));
+
         return file_name;
 
     def store_page(self, page_content, page_url):

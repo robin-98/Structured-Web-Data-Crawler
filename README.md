@@ -13,7 +13,7 @@ It can crawl websites according to a JSON configuration file, in which you can s
 
 Let's take one of the most popular news website in China as example:
 
-```javasript
+```json
 {
   "Structured-Web-Data-Crawler": { // This is the name of the crawler
     "data_dir": "./crawled_sites", // Location to store data files
@@ -27,15 +27,21 @@ Let's take one of the most popular news website in China as example:
       ],
       "target_components": [{     // Support multiple settings
         "name": "news",           // Sub-directory under the <project/version>
+        "storage": {
+          "pages_per_dir": 300,   // every directory store datas from 300 pages
+          "format": "json"        // data parsed from each page is organized in dictionary and dumped in json file
+        },
         "sub_domains": [
           "news.sina.com.cn"      // Constrain targets on some domains in the crawled webpages
         ],
         "sub_urls": [
-          "/c/2019-02-28"         // Constrain targets on some sub-path in the crawled webpages, it's always the beginning sub-string of those paths
+          "/c/\\d+-\\d+-\\d+"         // Constrain targets on some sub-path in the crawled webpages, it's always the beginning sub-string of those paths
+          // if the string contain '\\', it represent a regex expression
         ],
         "components": [{          // Some area in the webpage
           "role": "photo",        // to identify the component
-          "format": "image",      // supported formats: image, text, json
+          "format": "image",      // supported formats: image, text, json, table
+                                  // image resource while be downloaded in the same directory as the page content, and in the page content there will be the resource file name, not the original url
           "selector": "#article > div > img"  // jQuery style selector, while not exactly the same
         },{
           "role": "title",
@@ -45,6 +51,23 @@ Let's take one of the most popular news website in China as example:
           "role": "article",
           "format": "text",
           "selector": "#article"
+        },{
+          "role": "comments",
+          "format": "table",      // parse structured data embedded in the page while without concrete amount of rows
+          "selector": "body > div.comment > table",
+          "sub_components": [{
+            "role": "user_name",
+            "format": "text",
+            "sub_selector": "tr > td:nth-child(1)"  // the relevative selector according to its parent selector, you can also use absolute selector but use 'selector' property instead
+          },{
+            "role": "comment",
+            "format": "text",
+            "sub_selector": "tr > td:nth-child(3)"
+          },{
+            "role": "avatar",
+            "format": "image",
+            "sub_selector": "tr > td:nth-child(2)"
+          }]
         }]
       }]
     }]
@@ -83,9 +106,11 @@ means an `input` tag has at least one class name `s-inpt` and at least have thre
  |--<project_name>
    |--<version>
      |--<target_component set name>
-       |--<hash value of webpage url>
-         |--meta.txt    # store the url of the webpage
-         |--<component role>_<index of the component>[_<raw file name>].<txt/jpg/png/json>
+       |--<random hashed directory>
+         |--file_to_url.json
+         |--url_to_file.json
+         |--<random hashed file name according to each url>.json
+         |--<component role>_<index of the component>_<random hash>_[_<raw file name>].<txt/jpg/png/json>
 ```
 
 # Enjoy!
