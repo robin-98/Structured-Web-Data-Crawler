@@ -5,6 +5,7 @@ from hashlib import sha256
 import os
 from datetime import datetime
 import json
+from threading import RLock;
 
 class StorageWrapper:
 
@@ -32,35 +33,58 @@ class StorageWrapper:
 
         self.pages_in_current_directory = dict();
         self.__current_directory = None;
+        self.mutex = RLock();
 
-    def save_meta(self):
+    def save_meta(self, locked = False):
         # Dump page url and their file names into a json file
-        if self.__current_directory is not None:
-            for (file_name, data) in [\
-                ('url_to_file.json', self.pages_in_current_directory),\
-                ('file_to_url.json', {v: k for k, v in self.pages_in_current_directory.items()})]:
-                file_path = self.__current_directory + '/' + file_name;
-                with open(file_path, 'w') as f:
-                    json.dump(data, f, ensure_ascii = False);
+        # if not locked:
+        self.mutex.acquire();
+
+        try:
+            if self.__current_directory is not None:
+                for (file_name, data) in [\
+                    ('url_to_file.json', self.pages_in_current_directory),\
+                    ('file_to_url.json', {v: k for k, v in self.pages_in_current_directory.items()})]:
+                    file_path = self.__current_directory + '/' + file_name;
+                    with open(file_path, 'w') as f:
+                        json.dump(data, f, ensure_ascii = False);
+        except Exception as e:
+            print('ERROR when saving meta files in directory:', self.__current_directory, ', error message:', str(e));
+        finally:
+            # pass;
+            # if not locked:
+            self.mutex.release();
 
     def current_directory(self, page_url):
-        if page_url not in self.pages_in_current_directory \
-        and (len(self.pages_in_current_directory) >= self.pages_per_dir \
-            or len(self.pages_in_current_directory) == 0):
-            # New workspace
-            self.pages_in_current_directory.clear();
-            sub_dir = sha256((datetime.utcnow().isoformat() + '::' + page_url).encode('utf-8')).hexdigest();
-            self.__current_directory = urljoin(self.target_directory + '/', sub_dir);
-            if not os.path.exists(self.__current_directory):
-                os.makedirs(self.__current_directory);
-       
-        if page_url not in self.pages_in_current_directory: 
-            self.pages_in_current_directory[page_url] = None;
+        self.mutex.acquire();
+        try:
+            if page_url not in self.pages_in_current_directory \
+            and (len(self.pages_in_current_directory) >= self.pages_per_dir \
+                or len(self.pages_in_current_directory) == 0):
+                # Save before clear
+                self.save_meta(locked = True);
+                # New workspace
+                self.pages_in_current_directory.clear();
+                sub_dir = sha256((datetime.utcnow().isoformat() + '::' + page_url).encode('utf-8')).hexdigest();
+                self.__current_directory = urljoin(self.target_directory + '/', sub_dir);
+                if not os.path.exists(self.__current_directory):
+                    os.makedirs(self.__current_directory);
+           
+            if page_url not in self.pages_in_current_directory: 
+                self.pages_in_current_directory[page_url] = None;
+        except Exception as e:
+            print('ERROR when getting current directory for storage:', str(e));
+        finally:
+            # pass;
+            self.mutex.release();
 
         return self.__current_directory;
 
 
     def store_resource(self, resource_url, resource_format, page_url):
+        file_name = None;
+        self.mutex.acquire();
+
         file_name = sha256((datetime.utcnow().isoformat() + '::' + page_url + '::' + resource_url).encode('utf-8')).hexdigest();
         o = urlparse(resource_url);
         if resource_format == 'image':
@@ -73,6 +97,8 @@ class StorageWrapper:
             urlretrieve(resource_url, file_path);
         except Exception as e:
             print('ERROR when retrieving resource:',resource_url,'error message:', str(e));
+        finally:
+            self.mutex.release();
 
         return file_name;
 
@@ -83,7 +109,10 @@ class StorageWrapper:
         elif self.format == 'json':
             file_name += '.json';
         file_path = self.current_directory(page_url) + '/' + file_name;
+
+        self.mutex.acquire();
         self.pages_in_current_directory[page_url] = file_name;
+        self.mutex.release();
 
         if type(page_content) == str:
             with open(file_path, 'w') as f:

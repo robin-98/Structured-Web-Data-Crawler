@@ -6,14 +6,16 @@ from content_extractor.storage import StorageWrapper
 import urllib
 import re
 import json
+from threading import Lock;
 
 class ContentTarget:
 
     def __init__(self, base_url, target_def, storage_base_path):
         self.component_search_tree = SelectorSearchTreeNode();
-        self.set_target(target_def, storage_base_path);
         self.base_url = base_url;
         self.content = {};
+        self.mutex = Lock();
+        self.set_target(target_def, storage_base_path);
 
     def set_target(self, target_def, storage_base_path):
         self.name = target_def['name'];
@@ -85,7 +87,6 @@ class ContentTarget:
 
 
     def search_component_by_selector(self, selector_path_or_list):
-        
         selector_list = selector_path_or_list;
         if type(selector_path_or_list) == str:
             selector_list = selector_path_or_list.split(' > ');
@@ -110,8 +111,11 @@ class ContentTarget:
     def process_tag(self, page_url, selector_path, html_container):
         (comp_inst, comp_content) = self.gather_content(selector_path, html_container, page_url);
         if comp_inst is not None:
+            self.mutex.acquire();
             if page_url not in self.content:
                 self.content[page_url] = {};
+            self.mutex.release();
+
             content = self.content[page_url];
             if comp_inst.parent is None:
                 content[comp_inst.role] = comp_content;
@@ -187,7 +191,7 @@ class ContentTarget:
             try:
                 result = json.loads(component_text);
             except Exception as e:
-                print('ERROR when parsing component', str(e));
+                print('ERROR when parsing component [', comp.role, comp.format, ']', str(e));
             else:
                 pass
             finally:
@@ -199,10 +203,19 @@ class ContentTarget:
 
 
     def end_page(self, page_url):
-        file_path = self.storage.store_page(self.content[page_url], page_url);
-        return file_path;
-        del self.content[page_url];
+        self.mutex.acquire();
+        file_path = None;
+        try:
+            file_path = self.storage.store_page(self.content[page_url], page_url);
+            del self.content[page_url];
+        except Exception as e:
+            print('ERROR when storing page:', page_url, ', error message:', str(e));
+            pass
+        finally:
+            # pass;
+            self.mutex.release();
 
+        return file_path;
 
     def end_spider(self):
         self.storage.save_meta();

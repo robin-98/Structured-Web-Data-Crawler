@@ -147,7 +147,8 @@ class PageParser(HTMLParser):
         if tag == 'html':
             for target_inst in self.targets:
                 file_path = target_inst.end_page(self.page_url);
-                print('[' + target_inst.name +']', 'is stored in file: [' + file_path + '] for page: [' + self.page_url + ']');
+                if file_path is not None:
+                    print('[' + target_inst.name +']', 'is stored in file: [' + file_path + '] for page: [' + self.page_url + ']');
         
 
     
