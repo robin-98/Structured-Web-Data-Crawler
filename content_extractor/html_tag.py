@@ -49,6 +49,18 @@ class HtmlTag:
         else:
             return False;
 
+    def id(self):
+        if self.is_using_id():
+            return self.attrs['id'];
+        else:
+            return None;
+
+    def remove_id(self):
+        if self.is_using_id():
+            del self.attrs['id'];
+            return True;
+        return False;
+
     # gennerate the jQuery style element selector for the tag instance
     def selector(self):
         result = self.selector_without_nth_child();

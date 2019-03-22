@@ -95,6 +95,7 @@ class StorageWrapper:
         file_path = self.current_directory(page_url) + '/' + file_name;
         try:
             urlretrieve(resource_url, file_path);
+            print('Resource [' + resource_format + ']', resource_url, 'is stored at', file_path);
         except Exception as e:
             print('ERROR when retrieving resource:',resource_url,'error message:', str(e));
         finally:

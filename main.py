@@ -45,8 +45,22 @@ for site in cfg["target_sites"]:
   NUMBER_OF_THREADS = site['threads'];
   WHITE_LIST = site['white_list'];
   TARGET_DEFINITION = site['target_components'];
+
+  SLEEP = 0;
+  if 'sleep' in site:
+    SLEEP = site['sleep'];
+
+  USER_AGENT = None;
+  if 'user_agent' in site:
+    USER_AGENT = site['user_agent'];
+
   queue = Queue()
-  Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME, WHITE_LIST, TARGET_DEFINITION)
+  Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME,
+      user_agent = USER_AGENT,
+      white_list = WHITE_LIST, 
+      target_definition = TARGET_DEFINITION,
+      sleep = SLEEP
+  );
 
   # Create worker threads (will die when main exits)
   def create_workers():

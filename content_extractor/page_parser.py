@@ -1,6 +1,7 @@
 from html.parser import HTMLParser
 import urllib
 from content_extractor.html_tag import HtmlTag
+import re
 
 
 from content_extractor.content_target import ContentTarget
@@ -21,7 +22,7 @@ class PageParser(HTMLParser):
         self.__components = [];
         self.__links = set();
         self.white_list = [];
-        if not white_list is None:
+        if white_list is not None:
             self.white_list = white_list;
 
         self.targets = [];
@@ -79,14 +80,29 @@ class PageParser(HTMLParser):
         else:
             o = urllib.parse.urlparse(url);
             if o.netloc in self.white_list \
-            or o.scheme + '://' + o.netloc in self.white_list:
+            or o.scheme + '://' + o.netloc in self.white_list\
+            or o.path in self.white_list:
                 return True;
             else:
-                return False;
+                for item in self.white_list:
+                    if '\\' in item or '.*' in item or '.+' in item or '?' in item:
+                        if item[0] == '/':
+                            if re.match(item, o.path) is not None:
+                                return True;
+                        else:
+                            if re.match(item, o.netloc) is not None\
+                            or re.match(item, o.scheme + '://' + o.netloc) is not None:
+                                return True;
+        return False;
+
 
     # When we call HTMLParser feed() this function is called when it encounters an opening tag <a>
     def handle_starttag(self, tag, attrs):
         t = HtmlTag(tag, attrs);
+
+        for target in self.targets:
+            target.ignore_id_in_tag(t);
+
         if len(self.tag_stack) > 0:
             # close those incorrectlly defined meta and link tags
             parallelable_tags = ['meta', 'link'];

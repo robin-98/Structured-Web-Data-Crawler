@@ -34,12 +34,37 @@ class ContentTarget:
                 self.add_component(comp_def, comp_idx);
                 comp_idx += 1;
 
+        self.ignore_ids = [];
+        if 'ignore_ids' in target_def:
+            self.ignore_ids = target_def['ignore_ids'];
 
         storage_def = None;
         if 'storage' in target_def:
             storage_def = target_def['storage'];
         self.storage = StorageWrapper(storage_base_path, storage_def, self.name);
 
+    def ignore_id_in_tag(self, tag):
+        if tag is None:
+            return False;
+
+        if len(self.ignore_ids) == 0:
+            return False;
+
+        tag_id = tag.id();
+        if tag_id is None:
+            return False;
+
+        if tag_id in self.ignore_ids:
+            tag.remove_id();
+            return True;
+        else:
+            for item in self.ignore_ids:
+                if '\\' in item:
+                    if re.match(item, tag_id) is not None:
+                        tag.remove_id();
+                        return True;
+
+        return False;
 
 
     def is_page_a_target(self, page_url):
@@ -57,7 +82,7 @@ class ContentTarget:
                     and o.path.index(su) == 0:
                         return True;
                     # if sub url is a regex string
-                    if '\\' in su:
+                    if '\\' in su or '.*' in su or '.+' in su or '?' in su:
                         if re.match(su, o.path) is not None:
                             return True;
         return False;
@@ -163,16 +188,19 @@ class ContentTarget:
         # Found the target component in the search tree, and store the content
         component_url = None;
         component_text = html_container.text().strip();
-        if comp.content_property is not None:
+
+        if comp.format == 'image':
+            if comp.content_property is not None and comp.content_property in html_container.attrs:
+                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs[comp.content_property]);
+            elif html_container.tag == 'img' and 'src' in html_container.attrs:
+                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
+            elif html_container.tag == 'a' and 'href' in html_container.attrs:
+                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['href']);
+        elif comp.content_property is not None:
             p = comp.content_property;
             if p in html_container.attrs:
                 component_text = html_container.attrs[p].strip();
 
-        if comp.format == 'image':
-            if html_container.tag == 'img' and 'src' in html_container.attrs:
-                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['src']);
-            elif html_container.tag == 'a' and 'href' in html_container.attrs:
-                component_url = urllib.parse.urljoin(self.base_url, html_container.attrs['href']);
 
         # filter out the CDN syntax
         if comp.format == 'image' and component_url is not None\
@@ -185,11 +213,12 @@ class ContentTarget:
             print('retrieving resource:', component_url);
             result = component_url;
             result = self.storage.store_resource(component_url, comp.format, page_url);
+            
         elif comp.format == 'text':
             result = component_text;
         elif comp.format == 'json':
             try:
-                result = json.loads(component_text);
+                result = json.loads(component_text, strict=False);
             except Exception as e:
                 print('ERROR when parsing component [', comp.role, comp.format, ']', str(e));
             else:
