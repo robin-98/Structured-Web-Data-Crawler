@@ -78,21 +78,39 @@ class PageParser(HTMLParser):
         if len(self.white_list) == 0:
             return True;
         else:
+
+            is_domain_in_white_list = False;
+
             o = urllib.parse.urlparse(url);
             if o.netloc in self.white_list \
-            or o.scheme + '://' + o.netloc in self.white_list\
-            or o.path in self.white_list:
-                return True;
-            else:
+            or o.scheme + '://' + o.netloc in self.white_list:
+                is_domain_in_white_list = True;
+
+            if not is_domain_in_white_list:
                 for item in self.white_list:
                     if '\\' in item or '.*' in item or '.+' in item or '?' in item:
-                        if item[0] == '/':
-                            if re.match(item, o.path) is not None:
-                                return True;
-                        else:
+                        if item[0] != '/':
                             if re.match(item, o.netloc) is not None\
                             or re.match(item, o.scheme + '://' + o.netloc) is not None:
-                                return True;
+                                is_domain_in_white_list = True;
+                                break;
+
+            if not is_domain_in_white_list:
+                return is_domain_in_white_list;
+
+            if o.path in self.white_list:
+                return True;
+
+            cnt = 0;
+            for item in self.white_list:
+                if item[0] == '/':
+                    cnt += 1;
+                    if '\\' in item or '.*' in item or '.+' in item or '?' in item:
+                        if re.match(item, o.path) is not None:
+                            return True;
+            if cnt == 0:
+                return is_domain_in_white_list;
+                        
         return False;
 
 
