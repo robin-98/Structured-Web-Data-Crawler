@@ -26,6 +26,7 @@ class Component:
             self.sub_selector = comp_def['sub_selector'];
 
         self.parent = None;
+        self.sub_comp_cnt = 0;
 
     def add_sub_component(self, sub_comp):
         if sub_comp is None:
@@ -36,3 +37,4 @@ class Component:
             sub_comp.selector = self.selector + ' > ' + sub_comp.sub_selector;
 
         sub_comp.parent = self;
+        self.sub_comp_cnt += 1;

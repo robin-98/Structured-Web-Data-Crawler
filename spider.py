@@ -73,7 +73,7 @@ class Spider:
                     Spider.update_files();
 
             if Spider.sleep is not None:
-                time.sleep(random.random() * 10 + Spider.sleep);
+                time.sleep(random.random() * Spider.sleep + Spider.sleep);
 
     # Converts raw response data into readable information and checks for proper html formatting
     @staticmethod
@@ -85,11 +85,15 @@ class Spider:
         response = None;
         try:
             response = None;
-            if Spider.user_agent is not None:
+            if Spider.user_agent is not None and len(Spider.user_agent) > 0:
+                user_agent = Spider.user_agent;
+                if type(user_agent) == list:
+                    user_agent = user_agent[round((len(user_agent)-1)*random.random())];
+
                 req = Request(page_url,
                     data = None,
                     headers = {
-                        'User-Agent': Spider.user_agent
+                        'User-Agent': user_agent
                     });
                 response = urlopen(req);
             else:
